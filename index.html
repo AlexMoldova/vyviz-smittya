@@ -49,25 +49,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <script>
 (function(){
   window.dataLayer = window.dataLayer || [];
-  document.addEventListener('click', function(e){
+  var last = new WeakMap();
+  function detect(a){
+    var href = a.getAttribute('href') || '';
+    if (href.indexOf('tel:') === 0) return 'click_to_call';
+    if (href.indexOf('viber:') === 0) return 'click_viber';
+    if (href.indexOf('t.me') !== -1) return 'click_telegram';
+    if (href.indexOf('wa.me') !== -1 || href.indexOf('whatsapp') !== -1) return 'click_whatsapp';
+    return null;
+  }
+  function handle(e){
     var t = e.target;
     if (!t || !t.closest) return;
     var a = t.closest('a[href]');
     if (!a) return;
-    var href = a.getAttribute('href') || '';
-    var ev = null;
-    if (href.indexOf('tel:') === 0) ev = 'click_to_call';
-    else if (href.indexOf('viber:') === 0) ev = 'click_viber';
-    else if (href.indexOf('t.me') !== -1) ev = 'click_telegram';
-    else if (href.indexOf('wa.me') !== -1 || href.indexOf('whatsapp') !== -1) ev = 'click_whatsapp';
+    var ev = detect(a);
     if (!ev) return;
+    var now = Date.now();
+    if (now - (last.get(a) || 0) < 900) return;
+    last.set(a, now);
     dataLayer.push({
       event: ev,
       link_url: a.href,
       link_text: (a.textContent || '').replace(/\s+/g,' ').trim().slice(0, 100),
       link_classes: a.className || ''
     });
-  }, true);
+  }
+  document.addEventListener('pointerdown', handle, true);
+  document.addEventListener('click', handle, true);
 })();
 </script>
 
